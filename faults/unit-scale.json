@@ -1,0 +1,7 @@
+{
+  "type": "unit-scale",
+  "label": "Shift the decimal point",
+  "simulates": "A unit or scale mixup: thousands read as units, x10 or /10 slip during re-entry or conversion.",
+  "detectableBy": "Magnitude / range checks, comparison against expected totals.",
+  "defaultCount": 1
+}

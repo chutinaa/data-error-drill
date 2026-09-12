@@ -1,0 +1,8 @@
+{
+  "type": "value-swap",
+  "label": "Sneak in a plausible wrong value",
+  "simulates": "A wrong-but-valid value: the wrong status picked, a value copied from the wrong row, a stale category.",
+  "detectableBy": "Only cross-checks against a source of truth — format and range checks all pass. The hardest class to catch.",
+  "defaultCount": 1,
+  "subtle": true
+}

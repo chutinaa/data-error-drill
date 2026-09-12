@@ -1,0 +1,7 @@
+{
+  "type": "date-shift",
+  "label": "Shift a date's month",
+  "simulates": "A stale formula pulling last month, a timezone or format mixup (needs YYYY-MM-DD cells).",
+  "detectableBy": "Period filters, month-bucket totals.",
+  "defaultCount": 1
+}

@@ -1,0 +1,8 @@
+{
+  "type": "key-space",
+  "label": "Add invisible whitespace to a value",
+  "simulates": "A trailing space picked up during copy-paste — the silent killer of joins, lookups and exact matches.",
+  "detectableBy": "Trimmed-comparison checks, join reconciliation (row count in = row count out).",
+  "defaultCount": 1,
+  "subtle": true
+}

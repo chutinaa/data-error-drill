@@ -1,0 +1,7 @@
+{
+  "type": "digit-flip",
+  "label": "Flip one digit",
+  "simulates": "A typo while hand-copying numbers, or an OCR misread (8 vs 3, 5 vs 6).",
+  "detectableBy": "Sum / total checks, per-row amount reconciliation.",
+  "defaultCount": 2
+}

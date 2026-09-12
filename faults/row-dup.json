@@ -1,0 +1,7 @@
+{
+  "type": "row-dup",
+  "label": "Duplicate a row",
+  "simulates": "A double paste, a record submitted twice, a join that fans out.",
+  "detectableBy": "Uniqueness checks on the key column, row-count checks.",
+  "defaultCount": 1
+}

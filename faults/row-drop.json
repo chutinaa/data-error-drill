@@ -1,0 +1,7 @@
+{
+  "type": "row-drop",
+  "label": "Delete a row",
+  "simulates": "A record lost in a copy-paste, a filter left on during export, an off-by-one selection.",
+  "detectableBy": "Row-count checks, completeness checks against a source list.",
+  "defaultCount": 1
+}

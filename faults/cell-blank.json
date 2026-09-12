@@ -1,0 +1,7 @@
+{
+  "type": "cell-blank",
+  "label": "Blank out a cell",
+  "simulates": "A value lost in transformation, an unmapped field, a formula returning empty.",
+  "detectableBy": "Required-field checks, null checks.",
+  "defaultCount": 1
+}

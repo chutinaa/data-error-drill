@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>data-error-drill — can your tool catch it?</title>
+<style>
+:root{--bg:#faf9f6;--card:#fff;--ink:#2b2b33;--mut:#8a8894;--line:#e8e6e0;--acc:#5b7a99;--acc-ink:#fff;
+--ok:#2e7d4f;--ok-bg:#e7f3ec;--warn:#9a6b00;--warn-bg:#fdf3dd;--bad:#b3452e;--bad-bg:#fbeae5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.55 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;padding:26px 20px 40px}
+main{max-width:1180px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+h1{font-size:26px;margin:0}
+#tag{font-size:17px;color:var(--acc);font-weight:600;margin:2px 0 0}
+#intro{color:var(--mut);max-width:760px;margin:8px 0 18px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:8px 16px;cursor:pointer;font-size:14px}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+h2 .n{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-size:12.5px;
+display:inline-flex;align-items:center;justify-content:center;flex:none}
+.hint{font-size:12.5px;color:var(--mut)}
+#drop{border:1.6px dashed var(--line);border-radius:11px;padding:26px 14px;text-align:center;color:var(--mut);cursor:pointer}
+#drop.on{border-color:var(--acc);color:var(--acc)}
+#dataInfo{margin-top:10px;font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px}
+th,td{border:1px solid var(--line);padding:5px 9px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+th{background:#f4f2ec}
+.fault{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.fault:last-child{border-bottom:0}
+.fault input[type=checkbox]{margin-top:4px}
+.fault b{font-size:14px}
+.fault .subtle{font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;background:#fde8e8;color:#b04a4a;border-radius:8px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.sim{font-size:12.5px;color:var(--mut)}
+.cnt{width:52px;border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:14px;text-align:center}
+.filelist a{display:inline-block;margin:4px 10px 4px 0;font-size:14px}
+.chips{display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap}
+.chip{border-radius:20px;padding:4px 13px;font-size:13px;font-weight:600}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip.big{font-size:15px}
+.st{border-radius:6px;padding:2px 9px;font-size:12.5px;font-weight:600}
+.st.caught{background:var(--ok-bg);color:var(--ok)}.st.missed{background:var(--bad-bg);color:var(--bad)}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:9px;padding:10px;font:13px/1.5 Consolas,monospace;resize:vertical}
+.banner{border-radius:9px;padding:10px 14px;font-size:13.5px;margin:8px 0}
+.warnb{background:var(--warn-bg);color:var(--warn)}
+#empty{color:var(--mut);text-align:center;padding:18px;border:1.6px dashed var(--line);border-radius:11px;font-size:14px}
+footer{color:var(--mut);font-size:12.5px;text-align:center;margin-top:26px}
+footer a{color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>data-error-drill</h1>
+    <div id="tag">Can it catch?</div>
+  </div>
+  <div>
+    <button class="btn" id="btnSample">Load sample</button>
+    <button class="btn" id="btnReset">Reset</button>
+  </div>
+</header>
+<p id="intro">Is your AI quietly cutting corners — results that look tailored, logic that slacks off?
+This page preps an exam for the checking tool you built: plant known errors into a copy of your data
+— flip a digit, drop a row, shift a date — and see at a glance which ones it misses.
+Everything runs in this browser; no file is uploaded anywhere.</p>
+
+<div class="grid">
+<section>
+  <h2><span class="n">1</span>Data</h2>
+  <div id="drop">Drop a .csv here, or click to browse<br>
+  <span class="hint">first row = header · your original file is never touched — drills run on copies</span></div>
+  <input type="file" id="fileInp" accept=".csv,.txt" hidden>
+  <div id="dataInfo"></div>
+  <div id="preview"></div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Errors to plant</h2>
+  <div id="faults"></div>
+  <div style="margin-top:12px">
+    <button class="btn primary" id="btnDrill">Generate drilled copy →</button>
+    <span class="hint" id="drillHint">load data first</span>
+  </div>
+</section>
+</div>
+
+<section>
+  <h2><span class="n">3</span>Drilled copy &amp; answer sheet</h2>
+  <div id="out"><div id="empty">The drilled copy (CSV) and its answer sheet (JSON) will appear here.
+  Feed the copy to <b>your</b> tool — then come back and score its report in step 4.</div></div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Score your tool's report</h2>
+  <p class="hint" style="margin:0 0 8px">Paste what your tool reported on the drilled copy (any text — error list, log, summary).
+  Scoring is evidence-based: a fault counts as caught if the report mentions the planted wrong value or the affected row's key.</p>
+  <textarea id="reportBox" placeholder="e.g.&#10;amount mismatch on SO-10043: expected 402.75, file says 402.95&#10;row SO-10045 missing"></textarea>
+  <div style="margin-top:10px"><button class="btn primary" id="btnScore">Score it</button>
+  <span class="hint" id="scoreHint">generate a drilled copy first</span></div>
+  <div id="scoreOut"></div>
+</section>
+
+<footer>data-error-drill · all sample data is fictional · your files never leave this machine ·
+<a href="https://github.com/chutinaa/data-error-drill" target="_blank" rel="noopener">GitHub</a></footer>
+</main>
+
+<script type="module">
+import { mutate } from "./engine/mutate.js";
+import { score } from "./engine/score.js";
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- fault metadata (mirrors faults/*.json; fetched fresh when served, fallback inline) ---------- */
+const FAULTS_INLINE = [
+  { type:"digit-flip", label:"Flip one digit", simulates:"A typo while hand-copying numbers, or an OCR misread (8 vs 3, 5 vs 6).", defaultCount:2 },
+  { type:"digit-transpose", label:"Swap two adjacent digits", simulates:"The classic transposition typo (402.75 typed as 420.75).", defaultCount:1 },
+  { type:"unit-scale", label:"Shift the decimal point", simulates:"A unit or scale mixup: x10 or /10 slip during re-entry or conversion.", defaultCount:1 },
+  { type:"cell-blank", label:"Blank out a cell", simulates:"A value lost in transformation, an unmapped field.", defaultCount:1 },
+  { type:"row-drop",   label:"Delete a row",   simulates:"A record lost in a copy-paste, a filter left on during export.", defaultCount:1 },
+  { type:"row-dup",    label:"Duplicate a row",simulates:"A double paste, a record submitted twice, a join that fans out.", defaultCount:1 },
+  { type:"date-shift", label:"Shift a date's month", simulates:"A stale formula pulling last month (needs YYYY-MM-DD cells).", defaultCount:1 },
+  { type:"value-swap", label:"Sneak in a plausible wrong value", simulates:"A wrong-but-valid value: wrong status picked, value copied from the wrong row. Format checks all pass.", subtle:true, defaultCount:1 },
+  { type:"key-space",  label:"Add invisible whitespace", simulates:"A trailing space from a copy-paste — silently breaks joins, lookups and exact matches.", subtle:true, defaultCount:1 },
+];
+let FAULTS = FAULTS_INLINE;
+try {
+  const fetched = await Promise.all(FAULTS_INLINE.map(f => fetch("./faults/" + f.type + ".json").then(r => r.json())));
+  if (fetched.every(f => f && f.type)) FAULTS = fetched;
+} catch { /* file:// or offline dev — inline copy is identical */ }
+
+/* ---------- CSV ---------- */
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  const s = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (q) {
+      if (ch === '"') { if (s[i+1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ""));
+}
+function toCSV(table) {
+  return table.map(r => r.map(v => /[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : v).join(",")).join("\r\n");
+}
+
+/* ---------- state ---------- */
+let table = null, srcName = "", lastManifest = null, lastSeed = null;
+
+/* ---------- card 1: data ---------- */
+$("drop").onclick = () => $("fileInp").click();
+$("drop").ondragover = (e) => { e.preventDefault(); $("drop").classList.add("on"); };
+$("drop").ondragleave = () => $("drop").classList.remove("on");
+$("drop").ondrop = (e) => { e.preventDefault(); $("drop").classList.remove("on"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); };
+$("fileInp").onchange = () => { if ($("fileInp").files[0]) loadFile($("fileInp").files[0]); };
+
+async function loadFile(f) {
+  const t = parseCSV(await f.text());
+  if (t.length < 2) { $("dataInfo").innerHTML = "<span class='banner warnb'>Need a header row plus at least one data row.</span>"; return; }
+  setTable(t, f.name);
+}
+function setTable(t, name) {
+  table = t; srcName = name; lastManifest = null;
+  $("dataInfo").textContent = name + " — " + (t.length - 1) + " data rows × " + t[0].length + " columns";
+  const head = "<tr>" + t[0].map(h => "<th>" + esc(h) + "</th>").join("") + "</tr>";
+  const body = t.slice(1, 6).map(r => "<tr>" + r.map(v => "<td>" + esc(v) + "</td>").join("") + "</tr>").join("");
+  $("preview").innerHTML = "<table>" + head + body + "</table>" +
+    (t.length > 6 ? "<div class='hint'>…showing first 5 of " + (t.length - 1) + " rows</div>" : "");
+  $("drillHint").textContent = "";
+  refreshScoreHint();
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+/* ---------- card 2: faults ---------- */
+function renderFaults() {
+  $("faults").innerHTML = FAULTS.map(f =>
+    "<div class='fault'><input type='checkbox' id='ck_" + f.type + "' " + (["digit-flip","row-drop","value-swap"].includes(f.type) ? "checked" : "") + ">" +
+    "<div style='flex:1'><b>" + f.label + (f.subtle ? " <span class='subtle'>hard to catch</span>" : "") + "</b><div class='sim'>" + f.simulates + "</div></div>" +
+    "<input class='cnt' type='number' min='1' max='9' value='" + f.defaultCount + "' id='n_" + f.type + "'></div>"
+  ).join("");
+}
+renderFaults();
+
+/* ---------- card 3: drill ---------- */
+$("btnDrill").onclick = () => {
+  if (!table) { $("drillHint").textContent = "load data first"; return; }
+  const plan = FAULTS.filter(f => $("ck_" + f.type).checked)
+                     .map(f => ({ type: f.type, count: Math.max(1, Math.min(9, parseInt($("n_" + f.type).value) || 1)) }));
+  if (!plan.length) { $("drillHint").textContent = "pick at least one error type"; return; }
+  lastSeed = DEMO ? 4242 : Math.floor(Math.random() * 1e9);
+  let res;
+  try { res = mutate(table, plan, lastSeed); }
+  catch (err) { $("out").innerHTML = "<div class='banner warnb'>" + esc(err.message) + " — your table may be too small for this plan.</div>"; return; }
+  lastManifest = res.manifest;
+  $("scoreOut").innerHTML = "";
+  const base = (srcName.replace(/\.[^.]*$/, "") || "data");
+  const copyName = base + ".drill.csv", ansName = base + ".answers.json";
+  const copyURL = URL.createObjectURL(new Blob([toCSV(res.table)], { type: "text/csv" }));
+  const ansURL  = URL.createObjectURL(new Blob([JSON.stringify({ source: srcName, seed: lastSeed, faults: res.manifest }, null, 2)], { type: "application/json" }));
+  $("out").innerHTML =
+    "<div class='chips'><span class='chip bad big'>" + res.manifest.length + " error(s) planted</span></div>" +
+    "<div class='filelist'><a href='" + copyURL + "' download='" + copyName + "'>&#11015; " + copyName + "</a>" +
+    "<a href='" + ansURL + "' download='" + ansName + "'>&#11015; " + ansName + " (answer sheet — don't peek before scoring)</a></div>" +
+    "<div class='hint' style='margin-top:8px'>Next: run <b>your</b> tool on the drilled copy, then paste its report in step 4. " +
+    "The answer sheet stays in this page's memory, so you can score without the file.</div>";
+  refreshScoreHint();
+};
+
+/* ---------- card 4: score ---------- */
+function refreshScoreHint(){ $("scoreHint").textContent = lastManifest ? "" : "generate a drilled copy first"; }
+$("btnScore").onclick = () => {
+  if (!lastManifest) { refreshScoreHint(); return; }
+  const s = score(lastManifest, $("reportBox").value);
+  const chips = "<div class='chips'><span class='chip big " + (s.missed ? "bad" : "ok") + "'>catch rate " + s.catchRate + "%</span>" +
+    "<span class='chip ok'>caught " + s.caught + "</span><span class='chip bad'>missed " + s.missed + "</span></div>";
+  const head = "<tr><th>#</th><th>Planted error</th><th>Where</th><th>Verdict</th><th>Evidence</th></tr>";
+  const body = s.rows.map(r =>
+    "<tr><td>" + r.id + "</td><td>" + esc(labelOf(r.type)) + "</td><td>" + esc(r.rowKey) + "</td>" +
+    "<td><span class='st " + (r.caught ? "caught" : "missed") + "'>" + (r.caught ? "caught" : "missed") + "</span></td>" +
+    "<td class='hint'>" + esc(r.evidence) + "</td></tr>").join("");
+  const verdict = s.missed === 0
+    ? "<div class='banner' style='background:var(--ok-bg);color:var(--ok)'>Your tool caught everything planted this round. Run more drills with different errors before you celebrate — one green round is a data point, not a certificate.</div>"
+    : "<div class='banner warnb'>Your tool missed " + s.missed + " planted error(s). That's the point of the drill: now you know what to fix before real data finds it for you.</div>";
+  $("scoreOut").innerHTML = chips + "<table>" + head + body + "</table>" + verdict;
+};
+function labelOf(t){ const f = FAULTS.find(x => x.type === t); return f ? f.label : t; }
+
+/* ---------- sample ---------- */
+$("btnSample").onclick = () => {
+  reset();
+  setTable([
+    ["order_id","amount","ship_date","status"],
+    ["SO-10041","1250.00","2026-03-04","shipped"],
+    ["SO-10042","88.50","2026-03-05","shipped"],
+    ["SO-10043","402.75","2026-03-09","pending"],
+    ["SO-10044","17.20","2026-03-11","shipped"],
+    ["SO-10045","930.00","2026-03-12","cancelled"],
+    ["SO-10046","56.10","2026-03-15","shipped"],
+    ["SO-10047","301.40","2026-03-16","shipped"],
+    ["SO-10048","74.95","2026-03-18","pending"],
+    ["SO-10049","512.30","2026-03-21","shipped"],
+    ["SO-10050","66.00","2026-03-22","shipped"],
+  ], "sample_orders.csv (fictional)");
+};
+
+/* ---------- reset ---------- */
+function reset(){
+  table = null; srcName = ""; lastManifest = null;
+  $("dataInfo").textContent = ""; $("preview").innerHTML = ""; $("reportBox").value = "";
+  $("out").innerHTML = "<div id='empty'>The drilled copy (CSV) and its answer sheet (JSON) will appear here. Feed the copy to <b>your</b> tool — then come back and score its report in step 4.</div>";
+  $("scoreOut").innerHTML = ""; $("drillHint").textContent = "load data first"; refreshScoreHint();
+}
+$("btnReset").onclick = reset;
+
+/* ---------- demo mode (?demo=1): auto-run the whole loop with the sample and an example report ---------- */
+const DEMO = new URLSearchParams(location.search).has("demo");
+if (DEMO) {
+  $("btnSample").click();
+  $("btnDrill").click();
+  if (lastManifest) {
+    const hits = lastManifest.slice(0, Math.max(1, lastManifest.length - 1));
+    $("reportBox").value = "[demo] example report from a hypothetical checking tool:\n" +
+      hits.map(f => f.after !== undefined
+        ? "- value mismatch on " + f.rowKey + ": found \u00AB" + (f.after === "" ? "(blank)" : f.after) + "\u00BB"
+        : "- row " + f.rowKey + " count mismatch").join("\n");
+    $("btnScore").click();
+  }
+  if (new URLSearchParams(location.search).has("focus")) {
+    // screenshot helper: show only the scoring card
+    document.querySelectorAll("section").forEach(c => { if (!c.contains($("scoreOut"))) c.style.display = "none"; });
+    document.querySelectorAll("header, #intro").forEach(h => h.style.display = "none");
+  }
+}
+</script>
+</body>
+</html>

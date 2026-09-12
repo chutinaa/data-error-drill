@@ -1,0 +1,7 @@
+{
+  "type": "digit-transpose",
+  "label": "Swap two adjacent digits",
+  "simulates": "The classic transposition typo (402.75 typed as 420.75) — the most common human keying error.",
+  "detectableBy": "Sum / total checks; range checks usually miss it because the value stays plausible.",
+  "defaultCount": 1
+}
