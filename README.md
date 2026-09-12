@@ -12,10 +12,9 @@ You had it build a data-checking tool. It says "no issues found" every time; the
 
 ```mermaid
 flowchart LR
-    A[your.csv] -->|plant N known errors| B[your.drill.csv]
-    A -.->|never modified| A
+    A["your.csv<br/>(stays untouched)"] -->|plant N known errors into a copy| B[your.drill.csv]
     B --> C[run YOUR tool on it]
-    C --> D[paste its report]
+    C --> D[paste its report into the drill page]
     D -->|score against the answer sheet| E["catch rate + per-error verdict"]
 ```
 
